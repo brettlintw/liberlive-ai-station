@@ -1144,23 +1144,24 @@ st.markdown("""
         display: inline-block !important;
         font-weight: 900 !important;
         font-family: 'Courier New', monospace !important;
-        font-size: 13px !important;
         line-height: 1 !important;
         padding: 2px 5px !important;
         border-radius: 4px !important;
-        margin-bottom: 5px !important;
+        margin-bottom: 4px !important;
         color: white !important;
         white-space: nowrap !important;
         min-width: 1.2em !important;
         text-align: center !important;
         text-shadow: 0 1px 2px rgba(0,0,0,0.4) !important;
+        /* 預設用 clamp 自動適配：最小 11px，理想 3vw，最大 22px */
+        font-size: clamp(11px, 3vw, 22px) !important;
     }
     /* 無和弦時佔位，保持對齊 */
     .c-tag-empty {
         display: inline-block !important;
         min-width: 1em !important;
-        height: 22px !important;
-        margin-bottom: 5px !important;
+        height: clamp(16px, 3vw, 26px) !important;
+        margin-bottom: 4px !important;
     }
 
     /* 歌詞文字：白色大字 */
@@ -1171,6 +1172,8 @@ st.markdown("""
         line-height: 1.3 !important;
         letter-spacing: 0.05em !important;
         white-space: pre !important;
+        /* 預設自動適配：最小 16px，理想 5vw，最大 36px */
+        font-size: clamp(16px, 5vw, 36px) !important;
     }
 
     div.stButton > button {
@@ -1407,9 +1410,11 @@ with st.sidebar:
         st.video(st.session_state.yt_url)
 
     st.markdown("---")
-    c_size     = st.slider(T["chord_font"], 14, 60, 24)
-    l_size     = st.slider(T["lyric_font"], 14, 60, 28)
+    c_size     = st.slider(T["chord_font"], 10, 60, st.session_state.get("c_size", 18), key="sb_c_size")
+    l_size     = st.slider(T["lyric_font"], 12, 72, st.session_state.get("l_size", 26), key="sb_l_size")
     scroll_spd = st.slider(T["scroll_spd"], 0, 20, 0)
+    st.session_state["c_size"] = c_size
+    st.session_state["l_size"] = l_size
 
 # --- 10. 置頂曲目資訊欄 ---
 # 上排：唯讀顯示（搜尋後自動填入）
@@ -1672,10 +1677,34 @@ with tab_play:
         f"｜ ⏱️{m['bpm']}",
         f"｜ 🥁{m['beat']}",
     ]
-    info_col, btn_col, btn_img, btn_html = st.columns([8, 1, 1, 1])
+    info_col, btn_fs, btn_chord_m, btn_chord_p, btn_lyric_m, btn_lyric_p, btn_img, btn_html = st.columns([5, 1, 1, 1, 1, 1, 1, 1])
     with info_col:
         st.markdown("　".join(parts))
-    with btn_col:
+
+    # 讀取目前字體大小（sidebar 滑桿或上次調整的值）
+    _c = st.session_state.get("c_size", 18)
+    _l = st.session_state.get("l_size", 26)
+    c_size = _c
+    l_size = _l
+
+    with btn_chord_m:
+        if st.button("🎸－", key="c_minus", help="和弦字體縮小"):
+            st.session_state["c_size"] = max(10, _c - 2)
+            st.rerun()
+    with btn_chord_p:
+        if st.button("🎸＋", key="c_plus", help="和弦字體放大"):
+            st.session_state["c_size"] = min(60, _c + 2)
+            st.rerun()
+    with btn_lyric_m:
+        if st.button("🎤－", key="l_minus", help="歌詞字體縮小"):
+            st.session_state["l_size"] = max(12, _l - 2)
+            st.rerun()
+    with btn_lyric_p:
+        if st.button("🎤＋", key="l_plus", help="歌詞字體放大"):
+            st.session_state["l_size"] = min(72, _l + 2)
+            st.rerun()
+
+    with btn_fs:
         if st.button(T["fullscreen_btn"], key="enter_fs"):
             st.session_state.is_fullscreen = True
             st.rerun()
@@ -1751,14 +1780,17 @@ with tab_play:
                             root = pending_chord[0].upper()
                             color = COLOR_MAP.get(root, "#334155")
                             display_c = pending_chord
-                            chord_html = f'<span class="c-tag" style="background-color:{color};font-size:{c_size}px;">{display_c}</span>'
+                            chord_html = (
+                                f'<span class="c-tag" style="background-color:{color};'
+                                f'font-size:clamp(10px,{c_size}px,{c_size}px);">{display_c}</span>'
+                            )
                         else:
                             chord_html = f'<span class="c-tag-empty"></span>'
                         char_disp = "&nbsp;" if char == " " else char
                         line_html += (
                             f'<div class="char-unit">'
                             f'{chord_html}'
-                            f'<span class="l-tag" style="font-size:{l_size}px;">{char_disp}</span>'
+                            f'<span class="l-tag" style="font-size:clamp(14px,{l_size}px,{l_size}px);">{char_disp}</span>'
                             f'</div>'
                         )
                         pending_chord = ""
