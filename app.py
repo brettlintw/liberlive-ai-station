@@ -6,7 +6,7 @@ import base64
 from datetime import datetime
 from bs4 import BeautifulSoup
 from docx import Document
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 try:
     import pdfplumber
     HAS_PDF = True
@@ -26,7 +26,7 @@ COLOR_MAP = {
 }
 
 st.set_page_config(
-    page_title="Liberlive AI Station v26.0",
+    page_title="Liberlive AI Station v28.0",
     page_icon="liberlive_icon.jpg",
     layout="wide",
     initial_sidebar_state="auto"
@@ -581,6 +581,100 @@ def _try_scrape_search_results(search_url, song_l, singer_l, site_name):
                 return chord_text
     return None
 
+# 可從國際伺服器爬取的和弦網站清單
+INTL_CHORD_SITES = [
+    'ultimateguitar.com', 'cifraclub.com', 'azchords.com',
+    'chordie.com', 'e-chords.com', 'chordzone.org',
+    'youpinyuepu.com', 'jitascore.com', 'jufeng.com.tw', 'gtp.tw',
+]
+
+def _extract_real_url(href):
+    """把 DuckDuckGo 的重導向 URL 轉成真實 URL"""
+    if not href:
+        return None
+    # DuckDuckGo HTML 模式的重導向格式：//duckduckgo.com/l/?uddg=<encoded_url>&...
+    if 'duckduckgo.com/l/' in href or href.startswith('//'):
+        m = re.search(r'[?&]uddg=([^&]+)', href)
+        if m:
+            try:
+                return unquote(m.group(1))
+            except Exception:
+                return None
+        # 如果沒有 uddg 參數，跳過
+        return None
+    if href.startswith('http'):
+        return href
+    return None
+
+
+def search_duckduckgo_chords(song, singer):
+    """
+    用 DuckDuckGo 搜尋和弦網頁 URL，不需要任何 API Key。
+    從搜尋結果中找到和弦網站的連結，再爬取內容。
+    """
+    song_s, singer_s = song.strip(), singer.strip()
+    query = f"{singer_s} {song_s} guitar chords lyrics".strip()
+    search_url = f"https://html.duckduckgo.com/html/?q={quote(query)}"
+
+    try:
+        resp = requests.get(search_url, headers=SCRAPE_HEADERS, timeout=12)
+        resp.encoding = 'utf-8'
+        soup = BeautifulSoup(resp.text, 'html.parser')
+
+        found_urls = []
+        for a in soup.select('a.result__a, a.result__url, h2.result__title a'):
+            href = a.get('href', '')
+            real_url = _extract_real_url(href)
+            if not real_url:
+                continue
+            if any(skip in real_url for skip in ['duckduckgo', 'javascript', 'mailto']):
+                continue
+            if any(site in real_url for site in INTL_CHORD_SITES):
+                found_urls.insert(0, real_url)
+            else:
+                found_urls.append(real_url)
+
+        for url in found_urls[:6]:
+            content = _scrape_url_for_chords(url)
+            if content and len(content.strip()) > 80:
+                site_name = re.sub(r'^www\.', '', url.split('/')[2])
+                return content, site_name, url
+
+    except Exception:
+        pass
+    return None, None, "ddg_failed"
+
+
+def search_bing_chords(song, singer):
+    """用 Bing 搜尋和弦頁面作為 DuckDuckGo 的備援"""
+    song_s, singer_s = song.strip(), singer.strip()
+    query = f"{singer_s} {song_s} guitar chords".strip()
+    search_url = f"https://www.bing.com/search?q={quote(query)}&count=10"
+    try:
+        resp = requests.get(search_url, headers=SCRAPE_HEADERS, timeout=12)
+        resp.encoding = 'utf-8'
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        found_urls = []
+        for a in soup.select('li.b_algo h2 a, li.b_algo a.tilk'):
+            href = a.get('href', '')
+            if not href or not href.startswith('http'):
+                continue
+            if any(skip in href for skip in ['bing.com', 'microsoft.com', 'javascript', 'mailto']):
+                continue
+            if any(site in href for site in INTL_CHORD_SITES):
+                found_urls.insert(0, href)
+            else:
+                found_urls.append(href)
+        for url in found_urls[:6]:
+            content = _scrape_url_for_chords(url)
+            if content and len(content.strip()) > 80:
+                site_name = re.sub(r'^www\.', '', url.split('/')[2])
+                return content, site_name, url
+    except Exception:
+        pass
+    return None, None, "bing_failed"
+
+
 def _scrape_url_for_chords(url):
     """爬取指定 URL，嘗試提取和弦歌詞內容"""
     try:
@@ -714,7 +808,33 @@ def smart_search_candidates(song, singer):
         except Exception:
             continue
 
-    # Step 2：Gemini + Google Search 找真實 URL 再爬（不生成歌詞）
+    # Step 2a：DuckDuckGo 搜尋（免 API Key，從搜尋結果找真實 URL 再爬）
+    if len(candidates) < 2:
+        text_ddg, site_ddg, _ = search_duckduckgo_chords(song_s, singer_s)
+        if text_ddg and len(text_ddg.strip()) > 80:
+            text_ddg = convert_stacked_to_inline(text_ddg)
+            meta_ddg = extract_meta_from_text(text_ddg)
+            candidates.append({
+                'source': f"🔍 {site_ddg or 'DuckDuckGo'}",
+                'text': text_ddg,
+                'meta': meta_ddg,
+                'preview': _preview_text(text_ddg),
+            })
+
+    # Step 2b：Bing 搜尋備援（DuckDuckGo 失敗時）
+    if len(candidates) < 2:
+        text_bing, site_bing, _ = search_bing_chords(song_s, singer_s)
+        if text_bing and len(text_bing.strip()) > 80:
+            text_bing = convert_stacked_to_inline(text_bing)
+            meta_bing = extract_meta_from_text(text_bing)
+            candidates.append({
+                'source': f"🔍 {site_bing or 'Bing'}",
+                'text': text_bing,
+                'meta': meta_bing,
+                'preview': _preview_text(text_bing),
+            })
+
+    # Step 3：Gemini + Google Search 找真實 URL 再爬（不生成歌詞）
     if len(candidates) < 2:
         api_key = get_gemini_key()
         if api_key:
@@ -1326,7 +1446,7 @@ st.markdown(f"""
     <div class="status-bar">
         <div class="status-left">
             💎 Liberlive AI Station &nbsp;
-            <span style="color:#22C55E;font-weight:bold;">v26.0</span>
+            <span style="color:#22C55E;font-weight:bold;">v28.0</span>
             &nbsp;<span style="color:#FDE047;font-size:12px;">by Brett</span>
         </div>
         <div class="status-right">📅 {current_date} &nbsp;|&nbsp; {current_weather}</div>
