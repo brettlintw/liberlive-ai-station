@@ -639,59 +639,6 @@ def search_chord_sites(song, singer):
     except Exception as e:
         return None, None, f"error: {str(e)[:60]}"
 
-def gemini_generate_chords(song, singer, api_key):
-    """
-    備援：讓 Gemini 直接輸出 [和弦]歌詞 格式。
-    Gemini 的訓練資料來自真實曲譜網站，內容準確。
-    當所有中文曲譜網站均無法連線時使用此方法。
-    """
-    song_s, singer_s = song.strip(), singer.strip()
-    if not song_s and not singer_s:
-        return None
-    desc = f"《{song_s}》" if song_s else ""
-    desc += f" by {singer_s}" if singer_s else ""
-    try:
-        from google import genai
-        client = genai.Client(api_key=api_key)
-        prompt = f"""請提供 {desc} 的完整吉他和弦譜。
-
-輸出格式（必須嚴格遵守）：
-
-第一部分 — 歌曲資訊（每行一個欄位）：
-歌手: [歌手名]
-作詞: [作詞者]
-作曲: [作曲者]
-原調: [原始調性，如 G]
-BPM: [速度數字]
-拍號: [如 4/4]
-
-第二部分 — 和弦歌詞（緊接在資訊後，空一行）：
-- 和弦內嵌在歌詞中，格式：[和弦]歌詞
-- 歌詞必須是真實原版歌詞（中文歌用繁體中文）
-- 每行一句歌詞
-- 不要用 TAB 符號（不要 E|--|B|--|）
-- 包含所有段落：主歌、副歌、橋段
-
-範例：
-歌手: 周杰倫
-作詞: 周杰倫
-作曲: 周杰倫
-原調: G
-BPM: 65
-拍號: 4/4
-
-[G]故事的小黃[Bm]花 從出生那年[Em]就飄著
-[C]童年的盪秋[G]千 隨記憶一直[Am]晃到現[D]在
-
-現在請提供 {desc} 的完整和弦譜："""
-        resp = client.models.generate_content(model=get_gemini_model(), contents=prompt)
-        result = resp.text.strip()
-        # 確認有 [和弦] 格式才回傳
-        if re.search(r'\[[A-G][^\]]{0,5}\]', result):
-            return result
-        return None
-    except Exception:
-        return None
 
 def _preview_text(text, chars=60):
     """取歌詞前幾個字作預覽（跳過 metadata header 行）"""
@@ -735,19 +682,6 @@ def smart_search_candidates(song, singer):
                 })
         except Exception:
             continue
-
-    # Step 2：Gemini 生成（最多 2 個風格不同的版本）
-    api_key = get_gemini_key()
-    if api_key and len(candidates) < 2:
-        result = gemini_generate_chords(song, singer, api_key)
-        if result:
-            meta = extract_meta_from_text(result)
-            candidates.append({
-                'source': "🤖 Gemini AI 生成",
-                'text': result,
-                'meta': meta,
-                'preview': _preview_text(result),
-            })
 
     return candidates
 
