@@ -26,7 +26,7 @@ COLOR_MAP = {
 }
 
 st.set_page_config(
-    page_title="Liberlive AI Station v28.0",
+    page_title="Liberlive AI Station v29.0",
     page_icon="liberlive_icon.jpg",
     layout="wide",
     initial_sidebar_state="auto"
@@ -1213,7 +1213,7 @@ st.markdown("""
         border: 2px solid #1E3A8A;
         padding: 28px 30px;
         border-radius: 12px;
-        max-height: 75vh !important;
+        max-height: clamp(50vh, 72vh, 80vh) !important;
         width: 100% !important;
         overflow-x: hidden !important;
         overflow-y: auto !important;
@@ -1386,41 +1386,102 @@ st.markdown("""
     }
     .fullscreen-btn:hover { background: #FDE047 !important; color: #1E3A8A !important; }
 
-    /* ── 平板 (768px 以下) ── */
-    @media (max-width: 768px) {
-        .status-bar { flex-direction: column; text-align: center; gap: 4px; padding: 8px; }
-        .status-left { font-size: 14px; }
-        .status-right { font-size: 12px; }
-        .stage-paper { padding: 14px 10px; max-height: 65vh !important; }
-        .chord-line { display: flex !important; flex-wrap: wrap !important; white-space: normal !important; width: 100% !important; margin-bottom: 20px !important; }
-        .char-unit { display: inline-flex !important; flex-direction: column !important; margin-bottom: 8px; }
-        .c-tag { font-size: 13px !important; padding: 1px 4px !important; margin-bottom: 2px !important; }
-        /* 讓 Streamlit 的 columns 在小螢幕自動換行堆疊 */
-        div[data-testid="column"] { min-width: 100% !important; }
-        /* 加大按鈕點擊區 */
-        .stButton > button { min-height: 44px !important; font-size: 15px !important; }
-        /* 曲目資訊欄 換小字 */
-        .block-container { padding-left: 8px !important; padding-right: 8px !important; }
+    /* ── meta-grid：曲目資訊自訂 grid（取代 st.columns，手機自動換2列） ── */
+    .meta-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        gap: 6px;
+        margin-bottom: 6px;
+    }
+    .meta-grid-ctrl {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        gap: 6px;
+        margin-bottom: 8px;
+    }
+    .meta-ro {
+        background: #1E293B;
+        border: 1px solid #334155;
+        border-radius: 6px;
+        padding: 6px 10px;
+        min-height: 36px;
+    }
+    .meta-ro-label { font-size: 11px; color: #94A3B8; margin-bottom: 1px; }
+    .meta-ro-val   { font-size: 14px; color: #F1F5F9; }
+
+    /* ── 演出模式工具列 ── */
+    .play-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    .play-info {
+        flex: 1 1 200px;
+        font-size: 13px;
+        color: #CBD5E1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    /* ── 手機 (480px 以下：iPhone SE / Android) ── */
+    /* ── 平板 (768px 以下) ── */
+    @media (max-width: 768px) {
+        .status-bar { flex-direction: column; text-align: center; gap: 2px; padding: 6px 8px; }
+        .status-left { font-size: 13px; }
+        .status-right { font-size: 11px; }
+        .block-container { padding-left: 6px !important; padding-right: 6px !important; }
+
+        /* 所有 Streamlit columns 在平板以下強制單欄堆疊 */
+        [data-testid="stHorizontalBlock"] {
+            flex-direction: column !important;
+            gap: 0 !important;
+        }
+        [data-testid="column"] {
+            width: 100% !important;
+            flex: none !important;
+            min-width: 100% !important;
+        }
+
+        /* meta-grid 平板改 2 欄 */
+        .meta-grid, .meta-grid-ctrl { grid-template-columns: 1fr 1fr; }
+
+        .stage-paper { padding: 12px 8px; max-height: 60vh !important; }
+        .chord-line { margin-bottom: 18px !important; }
+        .c-tag { font-size: 12px !important; padding: 1px 4px !important; }
+        .stButton > button { min-height: 44px !important; font-size: 14px !important; }
+    }
+
+    /* ── 手機直屏 (480px 以下) ── */
     @media (max-width: 480px) {
-        .stage-paper { padding: 10px 6px; max-height: 70vh !important; font-size: 16px; }
-        .chord-line { margin-bottom: 16px !important; }
+        .status-bar { padding: 5px 6px; }
+        .status-left { font-size: 12px; }
+        .status-right { font-size: 10px; }
+        .block-container { padding: 0 4px !important; }
+
+        /* meta-grid 手機也 2 欄（4 格 → 2x2） */
+        .meta-grid, .meta-grid-ctrl { grid-template-columns: 1fr 1fr; gap: 4px; }
+        .meta-ro { padding: 5px 8px; }
+        .meta-ro-label { font-size: 10px; }
+        .meta-ro-val   { font-size: 13px; }
+
+        .stage-paper { padding: 8px 4px; max-height: 68vh !important; }
+        .chord-line { margin-bottom: 14px !important; }
         .c-tag { font-size: 11px !important; padding: 1px 3px !important; }
         .l-tag { font-size: 18px !important; }
-        /* 全螢幕模式在手機填滿 */
-        .block-container { padding: 0 4px !important; }
-        /* 標題欄縮小 */
-        h1, h2, h3 { font-size: 18px !important; }
-        /* 曲目資訊唯讀格更緊湊 */
-        div[data-testid="column"] > div > div > div {
-            font-size: 13px !important;
-        }
-        /* 全螢幕退出按鈕固定在頂部 */
-        .stButton > button[kind="secondary"] {
-            position: sticky; top: 8px; z-index: 9999;
-        }
+        h1, h2, h3 { font-size: 16px !important; }
+    }
+
+    /* ── 手機橫屏 (landscape, 高度 <= 500px) ── */
+    @media (max-height: 500px) and (orientation: landscape) {
+        .status-bar { padding: 3px 8px; margin-bottom: 4px; }
+        .meta-grid, .meta-grid-ctrl { grid-template-columns: 1fr 1fr 1fr 1fr; }
+        .stage-paper { max-height: 55vh !important; padding: 6px 8px; }
+        .chord-line { margin-bottom: 10px !important; }
+        /* 演出模式橫屏撐滿 */
+        .play-fs-wrap { min-height: 90vh !important; }
     }
 
     /* ── 超寬螢幕 (Mac / iPad Pro 橫向) ── */
@@ -1431,7 +1492,7 @@ st.markdown("""
 
     /* ── 觸控裝置：加大所有互動元素最小高度 ── */
     @media (hover: none) and (pointer: coarse) {
-        .stButton > button  { min-height: 48px !important; padding: 10px 16px !important; }
+        .stButton > button  { min-height: 48px !important; padding: 10px 14px !important; }
         .stTextInput input  { min-height: 44px !important; font-size: 16px !important; }
         .stSelectbox > div  { min-height: 44px !important; }
         .stNumberInput input { min-height: 44px !important; font-size: 16px !important; }
@@ -1446,7 +1507,7 @@ st.markdown(f"""
     <div class="status-bar">
         <div class="status-left">
             💎 Liberlive AI Station &nbsp;
-            <span style="color:#22C55E;font-weight:bold;">v28.0</span>
+            <span style="color:#22C55E;font-weight:bold;">v29.0</span>
             &nbsp;<span style="color:#FDE047;font-size:12px;">by Brett</span>
         </div>
         <div class="status-right">📅 {current_date} &nbsp;|&nbsp; {current_weather}</div>
@@ -1517,26 +1578,25 @@ with st.sidebar:
     st.session_state["l_size"] = l_size
 
 # --- 10. 置頂曲目資訊欄 ---
-# 上排：唯讀顯示（搜尋後自動填入）
 m0 = st.session_state.meta
-ro_cols = st.columns([3, 3, 3, 3])
+
+# 上排：唯讀 4 格（手機自動縮成 2x2 grid）
 ro_labels = [T["meta_song"], T["meta_singer"], T["meta_lyricist"], T["meta_composer"]]
 ro_keys   = ["song", "singer", "lyricist", "composer"]
-for col, label, key in zip(ro_cols, ro_labels, ro_keys):
-    col.markdown(f'<div style="font-size:12px;color:#94A3B8;margin-bottom:2px;">{label}</div>'
-                 f'<div style="background:#1E293B;border:1px solid #334155;border-radius:6px;'
-                 f'padding:8px 12px;color:#F1F5F9;font-size:15px;min-height:38px;">'
-                 f'{m0.get(key,"") or "—"}</div>', unsafe_allow_html=True)
+ro_cells = "".join(
+    f'<div class="meta-ro"><div class="meta-ro-label">{lbl}</div>'
+    f'<div class="meta-ro-val">{m0.get(k,"") or "—"}</div></div>'
+    for lbl, k in zip(ro_labels, ro_keys)
+)
+st.markdown(f'<div class="meta-grid">{ro_cells}</div>', unsafe_allow_html=True)
 
-# 下排：可編輯（變調/速度控制）
-st.markdown("<div style='margin-top:8px;'></div>", unsafe_allow_html=True)
-e1, e2, e3, e4 = st.columns([2, 2, 2, 2])
+# 下排：可編輯 4 格，用 st.columns（平板以下 CSS 強制單欄堆疊）
+e1, e2, e3, e4 = st.columns([1, 1, 1, 1])
 with e1: ok_val  = st.selectbox(T["meta_orig"],   KEYS, index=KEYS.index(m0['orig']),   key="meta_orig")
 with e2: tk_val  = st.selectbox(T["meta_target"], KEYS, index=KEYS.index(m0['target']), key="meta_target")
 with e3: bpm_val = st.number_input(T["meta_bpm"], 20, 250, m0['bpm'], key="meta_bpm")
 with e4: beat_val= st.text_input(T["meta_beat"],  value=m0['beat'], key="meta_beat")
 
-# 只更新可編輯欄位
 st.session_state.meta.update({
     "orig": ok_val, "target": tk_val,
     "bpm": bpm_val, "beat": beat_val
@@ -1554,7 +1614,17 @@ if st.session_state.get('is_fullscreen') and st.session_state.buffer:
     </style>
     """, unsafe_allow_html=True)
 
-    # 退出按鈕（浮在右上角）
+    # 退出按鈕 — 固定在螢幕頂部不隨滾動消失
+    st.markdown("""
+    <style>
+    .fs-exit-bar {
+        position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+        background: rgba(15,23,42,0.92); backdrop-filter: blur(4px);
+        padding: 6px 12px; display: flex; justify-content: flex-end;
+    }
+    </style>
+    <div class="fs-exit-bar" id="_fsbar"></div>
+    """, unsafe_allow_html=True)
     if st.button(T["exit_fullscreen"], key="exit_fs"):
         st.session_state.is_fullscreen = False
         st.rerun()
@@ -1566,9 +1636,19 @@ if st.session_state.get('is_fullscreen') and st.session_state.buffer:
     steps_fs = (KEYS.index(tk_fs) - KEYS.index(bk_fs)) % 12
     buf_fs = transpose_engine(st.session_state.buffer, steps_fs) if steps_fs else st.session_state.buffer
 
-    html_fs = [f'<div style="background:#0F172A;min-height:100vh;padding:30px 40px;">',
-               f'<div style="color:#FDE047;font-size:22px;font-weight:900;margin-bottom:4px;">《{m_fs.get("song","")}》</div>',
-               f'<div style="color:#22C55E;font-size:14px;margin-bottom:20px;">🎤 {m_fs.get("singer","")}　🎸 {m_fs.get("orig","")}→{tk_fs}　⏱️{m_fs.get("bpm","")}　🥁{m_fs.get("beat","")}</div>']
+    song_title = m_fs.get("song", "")
+    singer_name = m_fs.get("singer", "")
+    orig_k = m_fs.get("orig", "")
+    bpm_v = m_fs.get("bpm", "")
+    beat_v = m_fs.get("beat", "")
+    html_fs = [
+        f'<div class="play-fs-wrap" style="background:#0F172A;min-height:100vh;width:100vw;'
+        f'padding:clamp(48px,8vw,64px) clamp(8px,4vw,40px) clamp(10px,3vw,32px);box-sizing:border-box;">',
+        f'<div style="color:#FDE047;font-size:clamp(16px,4vw,26px);font-weight:900;margin-bottom:2px;">'
+        f'《{song_title}》</div>',
+        f'<div style="color:#22C55E;font-size:clamp(11px,2.5vw,14px);margin-bottom:clamp(10px,3vw,20px);">'
+        f'🎤 {singer_name}&nbsp;&nbsp;🎸 {orig_k}→{tk_fs}&nbsp;&nbsp;⏱️{bpm_v}&nbsp;&nbsp;🥁{beat_v}</div>',
+    ]
 
     for line in buf_fs.split('\n'):
         if not line.strip(): continue
@@ -1777,71 +1857,65 @@ with tab_play:
         f"｜ ⏱️{m['bpm']}",
         f"｜ 🥁{m['beat']}",
     ]
-    info_col, btn_fs, btn_chord_m, btn_chord_p, btn_lyric_m, btn_lyric_p, btn_img, btn_html = st.columns([5, 1, 1, 1, 1, 1, 1, 1])
-    with info_col:
-        st.markdown("　".join(parts))
-
-    # 讀取目前字體大小（sidebar 滑桿或上次調整的值）
+    # 讀取目前字體大小
     _c = st.session_state.get("c_size", 18)
     _l = st.session_state.get("l_size", 26)
     c_size = _c
     l_size = _l
 
-    with btn_chord_m:
-        if st.button("🎸－", key="c_minus", help="和弦字體縮小"):
-            st.session_state["c_size"] = max(10, _c - 2)
-            st.rerun()
-    with btn_chord_p:
-        if st.button("🎸＋", key="c_plus", help="和弦字體放大"):
-            st.session_state["c_size"] = min(60, _c + 2)
-            st.rerun()
-    with btn_lyric_m:
-        if st.button("🎤－", key="l_minus", help="歌詞字體縮小"):
-            st.session_state["l_size"] = max(12, _l - 2)
-            st.rerun()
-    with btn_lyric_p:
-        if st.button("🎤＋", key="l_plus", help="歌詞字體放大"):
-            st.session_state["l_size"] = min(72, _l + 2)
-            st.rerun()
-
-    with btn_fs:
-        if st.button(T["fullscreen_btn"], key="enter_fs"):
-            st.session_state.is_fullscreen = True
-            st.rerun()
-
-    # 計算目前顯示的轉調步數（給匯出函數用）
+    # 計算轉調步數（給匯出函數用）
     _bk_exp  = st.session_state.get('buffer_key', 'C')
     _tk_exp  = st.session_state.meta.get('target', 'C')
     _steps_exp = (KEYS.index(_tk_exp) - KEYS.index(_bk_exp)) % 12
 
-    with btn_img:
+    # ── 工具列第一行：歌曲資訊 + 全螢幕 ──
+    info_col, btn_fs = st.columns([6, 1])
+    with info_col:
+        st.markdown("　".join(parts))
+    with btn_fs:
+        if st.button(T["fullscreen_btn"], key="enter_fs", use_container_width=True):
+            st.session_state.is_fullscreen = True
+            st.rerun()
+
+    # ── 工具列第二行：字體調整 + 匯出（自動換行，手機友善） ──
+    btn_c1, btn_c2, btn_l1, btn_l2, btn_img_c, btn_html_c = st.columns([1, 1, 1, 1, 1, 1])
+    with btn_c1:
+        if st.button("🎸－", key="c_minus", use_container_width=True, help="和弦縮小"):
+            st.session_state["c_size"] = max(10, _c - 2)
+            st.rerun()
+    with btn_c2:
+        if st.button("🎸＋", key="c_plus", use_container_width=True, help="和弦放大"):
+            st.session_state["c_size"] = min(60, _c + 2)
+            st.rerun()
+    with btn_l1:
+        if st.button("🎤－", key="l_minus", use_container_width=True, help="歌詞縮小"):
+            st.session_state["l_size"] = max(12, _l - 2)
+            st.rerun()
+    with btn_l2:
+        if st.button("🎤＋", key="l_plus", use_container_width=True, help="歌詞放大"):
+            st.session_state["l_size"] = min(72, _l + 2)
+            st.rerun()
+    with btn_img_c:
         if st.session_state.buffer:
             try:
                 img_bytes = generate_chart_image(
-                    st.session_state.buffer,
-                    st.session_state.meta,
-                    COLOR_MAP,
-                    _steps_exp
-                )
+                    st.session_state.buffer, st.session_state.meta, COLOR_MAP, _steps_exp)
                 fname_img = re.sub(r'[\\/*?:"<>|]', '_',
                     f"{st.session_state.meta.get('song','chart')}_{_tk_exp}.png")
-                st.download_button("🖼️ 圖片", data=img_bytes,
-                    file_name=fname_img, mime="image/png", key="dl_img")
-            except Exception as e:
-                st.caption(f"圖片錯誤:{e}")
-
-    with btn_html:
+                st.download_button("🖼️", data=img_bytes,
+                    file_name=fname_img, mime="image/png",
+                    key="dl_img", use_container_width=True)
+            except Exception:
+                pass
+    with btn_html_c:
         if st.session_state.buffer:
             html_bytes = generate_chart_html(
-                st.session_state.buffer,
-                st.session_state.meta,
-                COLOR_MAP,
-                _steps_exp
-            )
+                st.session_state.buffer, st.session_state.meta, COLOR_MAP, _steps_exp)
             fname_html = re.sub(r'[\\/*?:"<>|]', '_',
                 f"{st.session_state.meta.get('song','chart')}_{_tk_exp}.html")
-            st.download_button("📄 PDF", data=html_bytes,
-                file_name=fname_html, mime="text/html", key="dl_html")
+            st.download_button("📄", data=html_bytes,
+                file_name=fname_html, mime="text/html",
+                key="dl_html", use_container_width=True)
 
     if st.session_state.buffer:
         # 即時計算「目前 buffer 的調」到「目標調」的半音差，動態轉調顯示
