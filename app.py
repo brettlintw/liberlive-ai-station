@@ -1591,11 +1591,17 @@ with tab_in:
             if yt_in:
                 with st.spinner(T["yt_spinner"]):
                     yt_song, yt_singer, yt_status = fetch_youtube_song_info(yt_in)
-                st.session_state.search_status = f"📺 {yt_status}"
                 if yt_song:
                     st.session_state.meta['song']   = yt_song
                     st.session_state.meta['singer'] = yt_singer
-                    st.toast(T["yt_done"].format(singer=yt_singer, song=yt_song))
+                    # 識別成功後直接搜尋和弦譜
+                    with st.spinner(f"{T['search_spinner']}《{yt_song}》..."):
+                        candidates = smart_search_candidates(yt_song, yt_singer)
+                    if candidates:
+                        st.session_state.search_candidates = candidates
+                        st.session_state.search_status = ""
+                    else:
+                        st.session_state.search_status = f"📺 {yt_status}　{T['search_fail']}"
                     st.rerun()
                 else:
                     st.warning(yt_status)
