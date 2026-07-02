@@ -1,0 +1,19 @@
+# Streamlit 敏感設定（絕不上傳）
+.streamlit/secrets.toml
+
+# 本機曲庫（個人資料，不上傳）
+liberlive_saved_tracks/
+
+# Python 暫存
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# 系統與編輯器
+.DS_Store
+.env
+.claude/
+~$*.docx
+Thumbs.db

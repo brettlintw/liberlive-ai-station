@@ -1,0 +1,8 @@
+streamlit
+requests
+beautifulsoup4
+docx2txt
+python-docx
+Pillow
+google-genai
+pdfplumber
