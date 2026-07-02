@@ -26,7 +26,7 @@ COLOR_MAP = {
 }
 
 st.set_page_config(
-    page_title="Liberlive AI Station v29.0",
+    page_title="Liberlive AI Station v30.0",
     page_icon="liberlive_icon.jpg",
     layout="wide",
     initial_sidebar_state="auto"
@@ -1429,59 +1429,52 @@ st.markdown("""
 
     /* ── 平板 (768px 以下) ── */
     @media (max-width: 768px) {
-        .status-bar { flex-direction: column; text-align: center; gap: 2px; padding: 6px 8px; }
-        .status-left { font-size: 13px; }
-        .status-right { font-size: 11px; }
+        .status-bar { flex-direction: column; text-align: center; gap: 2px; padding: 5px 8px; }
+        .status-left { font-size: 12px; }
+        .status-right { font-size: 10px; }
         .block-container { padding-left: 6px !important; padding-right: 6px !important; }
-
-        /* 所有 Streamlit columns 在平板以下強制單欄堆疊 */
-        [data-testid="stHorizontalBlock"] {
-            flex-direction: column !important;
-            gap: 0 !important;
-        }
-        [data-testid="column"] {
-            width: 100% !important;
-            flex: none !important;
-            min-width: 100% !important;
-        }
-
-        /* meta-grid 平板改 2 欄 */
-        .meta-grid, .meta-grid-ctrl { grid-template-columns: 1fr 1fr; }
-
-        .stage-paper { padding: 12px 8px; max-height: 60vh !important; }
+        .meta-grid { grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 4px; }
+        .meta-ro { padding: 4px 8px; min-height: 30px; }
+        .meta-ro-label { font-size: 10px; }
+        .meta-ro-val   { font-size: 12px; }
+        .stage-paper { padding: 10px 8px; max-height: 60vh !important; }
         .chord-line { margin-bottom: 18px !important; }
         .c-tag { font-size: 12px !important; padding: 1px 4px !important; }
-        .stButton > button { min-height: 44px !important; font-size: 14px !important; }
+        /* 壓縮 Streamlit 表單控件高度：平板以下不需要超大點擊區 */
+        .stTextInput input,
+        .stNumberInput input { min-height: 36px !important; height: 36px !important; font-size: 14px !important; padding: 4px 8px !important; }
+        div[data-baseweb="select"] > div { min-height: 36px !important; font-size: 14px !important; }
+        label { font-size: 11px !important; margin-bottom: 0 !important; }
+        .stButton > button { min-height: 40px !important; font-size: 13px !important; padding: 6px 10px !important; }
     }
 
     /* ── 手機直屏 (480px 以下) ── */
     @media (max-width: 480px) {
-        .status-bar { padding: 5px 6px; }
-        .status-left { font-size: 12px; }
-        .status-right { font-size: 10px; }
+        .status-bar { padding: 4px 6px; margin-bottom: 6px; }
         .block-container { padding: 0 4px !important; }
-
-        /* meta-grid 手機也 2 欄（4 格 → 2x2） */
-        .meta-grid, .meta-grid-ctrl { grid-template-columns: 1fr 1fr; gap: 4px; }
-        .meta-ro { padding: 5px 8px; }
-        .meta-ro-label { font-size: 10px; }
-        .meta-ro-val   { font-size: 13px; }
-
+        .meta-grid { grid-template-columns: 1fr 1fr; gap: 3px; margin-bottom: 3px; }
+        .meta-ro { padding: 3px 6px; min-height: 28px; }
+        .meta-ro-label { font-size: 9px; }
+        .meta-ro-val   { font-size: 12px; }
         .stage-paper { padding: 8px 4px; max-height: 68vh !important; }
         .chord-line { margin-bottom: 14px !important; }
         .c-tag { font-size: 11px !important; padding: 1px 3px !important; }
-        .l-tag { font-size: 18px !important; }
-        h1, h2, h3 { font-size: 16px !important; }
+        .l-tag { font-size: 17px !important; }
+        h1, h2, h3 { font-size: 15px !important; }
+        .stTextInput input,
+        .stNumberInput input { min-height: 34px !important; height: 34px !important; font-size: 14px !important; padding: 2px 6px !important; }
+        div[data-baseweb="select"] > div { min-height: 34px !important; font-size: 13px !important; }
+        label { font-size: 10px !important; }
+        .stButton > button { min-height: 38px !important; font-size: 12px !important; padding: 4px 8px !important; }
     }
 
-    /* ── 手機橫屏 (landscape, 高度 <= 500px) ── */
-    @media (max-height: 500px) and (orientation: landscape) {
-        .status-bar { padding: 3px 8px; margin-bottom: 4px; }
-        .meta-grid, .meta-grid-ctrl { grid-template-columns: 1fr 1fr 1fr 1fr; }
-        .stage-paper { max-height: 55vh !important; padding: 6px 8px; }
-        .chord-line { margin-bottom: 10px !important; }
-        /* 演出模式橫屏撐滿 */
-        .play-fs-wrap { min-height: 90vh !important; }
+    /* ── 手機橫屏 (landscape, 高度 <= 430px) ── */
+    @media (max-height: 430px) and (orientation: landscape) {
+        .status-bar { padding: 2px 8px; margin-bottom: 3px; }
+        .meta-grid { grid-template-columns: 1fr 1fr 1fr 1fr; }
+        .stage-paper { max-height: 52vh !important; padding: 5px 8px; }
+        .chord-line { margin-bottom: 8px !important; }
+        .play-fs-wrap { min-height: 92vh !important; }
     }
 
     /* ── 超寬螢幕 (Mac / iPad Pro 橫向) ── */
@@ -1490,13 +1483,10 @@ st.markdown("""
         .chord-line { margin-bottom: 36px !important; }
     }
 
-    /* ── 觸控裝置：加大所有互動元素最小高度 ── */
+    /* ── 觸控裝置：最低 38px 點擊區，iOS 防自動放大 ── */
     @media (hover: none) and (pointer: coarse) {
-        .stButton > button  { min-height: 48px !important; padding: 10px 14px !important; }
-        .stTextInput input  { min-height: 44px !important; font-size: 16px !important; }
-        .stSelectbox > div  { min-height: 44px !important; }
-        .stNumberInput input { min-height: 44px !important; font-size: 16px !important; }
-        /* iOS Safari 禁止 input 自動放大 */
+        .stButton > button  { min-height: 38px !important; }
+        /* iOS Safari: font-size >= 16px 才不自動 zoom，但 meta 區已用 CSS 覆寫 */
         input, select, textarea { font-size: 16px !important; }
     }
     </style>
@@ -1507,7 +1497,7 @@ st.markdown(f"""
     <div class="status-bar">
         <div class="status-left">
             💎 Liberlive AI Station &nbsp;
-            <span style="color:#22C55E;font-weight:bold;">v29.0</span>
+            <span style="color:#22C55E;font-weight:bold;">v30.0</span>
             &nbsp;<span style="color:#FDE047;font-size:12px;">by Brett</span>
         </div>
         <div class="status-right">📅 {current_date} &nbsp;|&nbsp; {current_weather}</div>
@@ -1590,12 +1580,13 @@ ro_cells = "".join(
 )
 st.markdown(f'<div class="meta-grid">{ro_cells}</div>', unsafe_allow_html=True)
 
-# 下排：可編輯 4 格，用 st.columns（平板以下 CSS 強制單欄堆疊）
-e1, e2, e3, e4 = st.columns([1, 1, 1, 1])
-with e1: ok_val  = st.selectbox(T["meta_orig"],   KEYS, index=KEYS.index(m0['orig']),   key="meta_orig")
-with e2: tk_val  = st.selectbox(T["meta_target"], KEYS, index=KEYS.index(m0['target']), key="meta_target")
-with e3: bpm_val = st.number_input(T["meta_bpm"], 20, 250, m0['bpm'], key="meta_bpm")
-with e4: beat_val= st.text_input(T["meta_beat"],  value=m0['beat'], key="meta_beat")
+# 下排：可編輯 — 兩排 2 欄（手機橫排 2 格，不堆疊）
+_ec1, _ec2 = st.columns(2)
+with _ec1: ok_val  = st.selectbox(T["meta_orig"],   KEYS, index=KEYS.index(m0['orig']),   key="meta_orig")
+with _ec2: tk_val  = st.selectbox(T["meta_target"], KEYS, index=KEYS.index(m0['target']), key="meta_target")
+_ec3, _ec4 = st.columns(2)
+with _ec3: bpm_val = st.number_input(T["meta_bpm"], 20, 250, m0['bpm'], key="meta_bpm")
+with _ec4: beat_val= st.text_input(T["meta_beat"],  value=m0['beat'], key="meta_beat")
 
 st.session_state.meta.update({
     "orig": ok_val, "target": tk_val,
