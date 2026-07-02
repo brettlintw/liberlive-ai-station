@@ -595,16 +595,7 @@ def search_chord_sites(song, singer):
     singer_l = singer_s.lower()
     query    = quote(f"{singer_s} {song_s}".strip())
 
-    # Step 1a：中文網站（網路允許時有效）
-    for site_name, tpl in CN_SEARCH_SITES:
-        try:
-            result = _try_scrape_search_results(tpl.format(q=query), song_l, singer_l, site_name)
-            if result:
-                return result, site_name, "ok"
-        except Exception:
-            continue
-
-    # Step 1b：Gemini 找 Cifraclub（英文歌效果佳）
+    # Gemini 找 Cifraclub（真實 URL 爬取，非生成歌詞）
     api_key = get_gemini_key()
     if not api_key:
         return None, None, "no_key"
@@ -663,11 +654,11 @@ def smart_search_candidates(song, singer):
     """搜尋並回傳多個候選結果讓使用者選擇"""
     candidates = []
 
-    # Step 1：各中文曲譜網站
     song_s, singer_s = song.strip(), singer.strip()
-    query = quote(f"{singer_s} {song_s}".strip())
+    query  = quote(f"{singer_s} {song_s}".strip())
     song_l, singer_l = song_s.lower(), singer_s.lower()
 
+    # Step 1：各中文曲譜網站（本機/4G 環境有效；雲端可能被擋）
     for site_name, tpl in CN_SEARCH_SITES:
         try:
             result = _try_scrape_search_results(tpl.format(q=query), song_l, singer_l, site_name)
@@ -682,6 +673,21 @@ def smart_search_candidates(song, singer):
                 })
         except Exception:
             continue
+
+    # Step 2：Cifraclub（巴西，國際可連；Gemini 找真實 URL 再爬，不生成歌詞）
+    if len(candidates) < 2:
+        api_key = get_gemini_key()
+        if api_key:
+            text_cf, _, _ = search_chord_sites(song_s, singer_s)
+            if text_cf and len(text_cf.strip()) > 80:
+                text_cf = convert_stacked_to_inline(text_cf)
+                meta_cf = extract_meta_from_text(text_cf)
+                candidates.append({
+                    'source': "🌐 Cifraclub",
+                    'text': text_cf,
+                    'meta': meta_cf,
+                    'preview': _preview_text(text_cf),
+                })
 
     return candidates
 
