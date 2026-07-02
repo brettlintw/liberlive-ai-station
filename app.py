@@ -581,54 +581,94 @@ def _try_scrape_search_results(search_url, song_l, singer_l, site_name):
                 return chord_text
     return None
 
+def _scrape_url_for_chords(url):
+    """爬取指定 URL，嘗試提取和弦歌詞內容"""
+    try:
+        soup = fetch_page(url)
+        if not soup:
+            return None
+        # Cifraclub 專用選擇器
+        if 'cifraclub' in url:
+            el = soup.select_one('.cifra_cnt, pre.cifra')
+            if el:
+                for s in el(["script","style"]): s.decompose()
+                return el.get_text(separator='\n').strip()
+        # Ultimate Guitar 專用
+        if 'ultimate-guitar' in url or 'ultimateguitar' in url:
+            el = soup.select_one('pre.ugT')
+            if not el:
+                el = soup.find('pre')
+            if el:
+                return el.get_text(separator='\n').strip()
+        # 通用：嘗試 CONTENT_SELECTORS
+        return extract_chords_from_soup(soup) or None
+    except Exception:
+        return None
+
+
 def search_chord_sites(song, singer):
     """
-    Step 1a：直接爬中文曲譜網站（有譜嗎/吉他譜/菊風/GTP）
-              在 4G/5G 或 Streamlit Cloud 環境可用
-    Step 1b：Gemini 找 Cifraclub URL 爬取（國際網路備援）
+    用 Gemini + Google Search 找到真實和弦網頁 URL，再由我們爬取。
+    歌詞/和弦來自真實網站，Gemini 只負責找 URL 不生成內容。
     """
     song_s, singer_s = song.strip(), singer.strip()
     if not song_s and not singer_s:
         return None, None, "empty_input"
 
-    song_l   = song_s.lower()
-    singer_l = singer_s.lower()
-    query    = quote(f"{singer_s} {song_s}".strip())
-
-    # Gemini 找 Cifraclub（真實 URL 爬取，非生成歌詞）
     api_key = get_gemini_key()
     if not api_key:
         return None, None, "no_key"
 
-    if song_s and singer_s:
-        query_desc = f"song '{song_s}' by '{singer_s}'"
-    elif song_s:
-        query_desc = f"song '{song_s}'"
-    else:
-        query_desc = f"a popular song by '{singer_s}'"
+    desc = f"《{song_s}》"
+    if singer_s:
+        desc += f" {singer_s}"
 
     try:
         from google import genai
+        from google.genai import types
         client = genai.Client(api_key=api_key)
+
+        # 讓 Gemini 用 Google Search 找真實 URL
         prompt = (
-            f"Find the exact Cifraclub Brazil URL for the {query_desc}.\n"
-            f"URL format: https://www.cifraclub.com.br/[artist-slug]/[song-slug]/\n"
-            f"Reply with ONLY the complete URL. No markdown, no explanation."
+            f"Search Google for guitar chord charts of {desc}.\n"
+            f"Find a page from sites like: ultimateguitar.com, cifraclub.com.br, "
+            f"azchords.com, chordify.net, e-chords.com, "
+            f"youpinyuepu.com, jitascore.com, jufeng.com.tw.\n"
+            f"Return ONLY the best direct URL to the chord chart page. "
+            f"No markdown, no explanation, just the URL."
         )
-        resp = client.models.generate_content(model=get_gemini_model(), contents=prompt)
-        url = resp.text.strip().rstrip('.,')
-        if 'cifraclub.com' in url and url.startswith('http'):
-            soup = fetch_page(url)
-            if soup:
-                content = soup.select_one('.cifra_cnt')
-                if content:
-                    for s in content(["script", "style"]): s.decompose()
-                    text = content.get_text(separator='\n')
-                    if len(text.strip()) > 80:
-                        return text, "Cifraclub", url
-        return None, None, f"cifraclub_failed: {url}"
+        try:
+            # 優先用 Google Search grounding（Gemini 2.0+）
+            resp = client.models.generate_content(
+                model=get_gemini_model(),
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    tools=[types.Tool(google_search=types.GoogleSearch())]
+                )
+            )
+        except Exception:
+            # fallback：不用 grounding，Gemini 從記憶中猜 URL
+            resp = client.models.generate_content(
+                model=get_gemini_model(), contents=prompt
+            )
+
+        raw = resp.text.strip()
+        # 從回應中抽取 URL
+        url_match = re.search(r'https?://[^\s\)\]\'"<>]+', raw)
+        if not url_match:
+            return None, None, "no_url_found"
+
+        url = url_match.group(0).rstrip('.,)')
+        site_name = re.sub(r'^www\.', '', url.split('/')[2])
+
+        content = _scrape_url_for_chords(url)
+        if content and len(content.strip()) > 80:
+            return content, site_name, url
+
+        return None, None, f"scrape_failed: {url}"
+
     except Exception as e:
-        return None, None, f"error: {str(e)[:60]}"
+        return None, None, f"error: {str(e)[:80]}"
 
 
 def _preview_text(text, chars=60):
@@ -674,16 +714,16 @@ def smart_search_candidates(song, singer):
         except Exception:
             continue
 
-    # Step 2：Cifraclub（巴西，國際可連；Gemini 找真實 URL 再爬，不生成歌詞）
+    # Step 2：Gemini + Google Search 找真實 URL 再爬（不生成歌詞）
     if len(candidates) < 2:
         api_key = get_gemini_key()
         if api_key:
-            text_cf, _, _ = search_chord_sites(song_s, singer_s)
+            text_cf, site_cf, _ = search_chord_sites(song_s, singer_s)
             if text_cf and len(text_cf.strip()) > 80:
                 text_cf = convert_stacked_to_inline(text_cf)
                 meta_cf = extract_meta_from_text(text_cf)
                 candidates.append({
-                    'source': "🌐 Cifraclub",
+                    'source': f"🌐 {site_cf or 'Web'}",
                     'text': text_cf,
                     'meta': meta_cf,
                     'preview': _preview_text(text_cf),
